@@ -15,6 +15,7 @@ using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 using System.Threading;
 using System.Text;
+using System.Security.Principal;
 
 namespace OpenHardwareMonitor.Hardware {
   internal static class Ring0 {
@@ -45,6 +46,8 @@ namespace OpenHardwareMonitor.Hardware {
       IOCTL_OLS_READ_MEMORY = new IOControlCode(OLS_TYPE, 0x841,
         IOControlCode.Access.Read);
 
+    public static string TempFolderPath { get; set; }
+
     private static Assembly GetAssembly() {
       return typeof(Ring0).Assembly;
     }
@@ -52,13 +55,16 @@ namespace OpenHardwareMonitor.Hardware {
     private static string GetTempFileName() {
       
       // try to create one in the application folder
-      string location = GetAssembly().Location;
-      if (!string.IsNullOrEmpty(location)) {        
+      if (!string.IsNullOrEmpty(TempFolderPath)) {        
         try {
-          string fileName = Path.ChangeExtension(location, ".sys");
-          using (FileStream stream = File.Create(fileName)) {
-            return fileName;
-          }
+          string fileName = Path.Combine(TempFolderPath, "OpenHardwareMonitorLib.sys");
+          if (File.Exists(fileName)) { File.Delete(fileName); }
+          using (FileStream stream = File.Create(fileName));
+          var directoryInfo = new DirectoryInfo(fileName);
+          var security = directoryInfo.GetAccessControl();
+          security.AddAccessRule(new FileSystemAccessRule(new SecurityIdentifier(WellKnownSidType.WorldSid, null), FileSystemRights.FullControl, InheritanceFlags.ObjectInherit | InheritanceFlags.ContainerInherit, PropagationFlags.NoPropagateInherit, AccessControlType.Allow));
+          directoryInfo.SetAccessControl(security);
+          return fileName;
         } catch (Exception) { }
       }
 

@@ -109,6 +109,12 @@ namespace OpenHardwareMonitor.Hardware {
       open = true;
     }
 
+    public string TempFolderPath
+        {
+          get { return Ring0.TempFolderPath; }
+          set { Ring0.TempFolderPath = value; }
+        }
+
     public bool MainboardEnabled {
       get { return mainboardEnabled; }
 
